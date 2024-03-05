@@ -13,8 +13,11 @@ const parameters = {
 gui
     .addColor(parameters, 'materialColor')
     .onChange(() => {
-        material.color.set(parameters.materialColor) // 
+        material.color.set(parameters.materialColor)
+        particlesMaterial.color.set(parameters.materialColor)
     })
+    .name("Geometry colour")
+    
 
 /**
  * Base
@@ -67,6 +70,35 @@ mesh3.position.x = 2
 scene.add(mesh1, mesh2, mesh3)
 
 const sectionMeshes = [mesh1, mesh2, mesh3]
+
+// Particles
+// Geometry
+const particleCount = 200
+const positions = new Float32Array(particleCount * 3)
+
+for (let i=0; i< particleCount; i++) {
+    positions [i*3 + 0] = (Math.random() - 0.5) * 10
+    positions [i*3 + 1] = objectsDistance * 0.5 - Math.random() * objectsDistance * sectionMeshes.length
+    positions [i*3 + 2] = (Math.random() - 0.5) * 10
+}
+
+const particlesGeometry = new THREE.BufferGeometry()
+particlesGeometry.setAttribute(
+    'position',
+    new THREE.BufferAttribute(positions, 3)
+)
+
+const particlesMaterial = new THREE.PointsMaterial(
+    {
+        color: parameters.materialColor,
+        sizeAttenuation: true,
+        size: 0.05
+    }
+)
+
+const particles = new THREE.Points(particlesGeometry, particlesMaterial)
+
+scene.add(particles)
 
 // Light
 const directionalLight = new THREE.DirectionalLight("#ffffff", 3)
@@ -123,18 +155,37 @@ window.addEventListener('scroll', () => {
     scrollY = window.scrollY
 })
 
+// Cursor
+const cursor = {}
+cursor.x = 0
+cursor.y = 0
+
+window.addEventListener("mousemove", (event) => {
+    cursor.x = event.clientX / sizes.width - 0.5
+    cursor.y = event.clientY / sizes.height - 0.5
+})
+
 /**
  * Animate
  */
 const clock = new THREE.Clock()
+let previousTime = 0
 
 const tick = () =>
 {
     const elapsedTime = clock.getElapsedTime()
+    const deltaTime = elapsedTime - previousTime
+    previousTime = elapsedTime
 
     // Animate camera
 
     camera.position.y = - scrollY / sizes.height * objectsDistance // height calculated by the sizes object line 77
+
+    const paralaxX = cursor.x
+    const paralaxY = - cursor.y
+
+    camera.position.x = paralaxX * 5 * deltaTime
+    camera.position.y += paralaxY * 5 * deltaTime
 
     // Animate meshes
     for (const mesh of sectionMeshes) {
